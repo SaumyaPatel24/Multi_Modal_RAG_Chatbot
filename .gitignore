@@ -1,8 +1,16 @@
 # Python
 __pycache__/
 *.pyc
+
+# Python virtual environment
 venv/
-.env
+backend/venv/
+
+
+# Environment variables
+*.env
+backend/.env
+
 
 # Node / React
 node_modules/
