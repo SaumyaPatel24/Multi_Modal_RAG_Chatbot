@@ -13,7 +13,7 @@ load_dotenv()
 
 persistent_directory = "db/chroma_db"
 
-embedding_model = OpenAIEmbeddings(model ="text-embedding-3-small")
+embedding_model = OpenAIEmbeddings(model ="text-embedding-3-small", openai_api_key=os.getenv("OPENAI_API_KEY"))
 
 db = Chroma(
     persist_directory=persistent_directory,
