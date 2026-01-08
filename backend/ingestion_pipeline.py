@@ -36,6 +36,11 @@ def create_chunks_by_title(elements):
         combine_text_under_n_chars=500
     )
     print(f"Created {len(chunks)} chunks by title.")
+    for i, chunk in enumerate(chunks):
+        if hasattr(chunk, "text"):
+            print(f"Chunk {i+1} has {len(chunk.text)} characters, type(chunk.text) = {type(chunk.text)}")
+        else:
+            print(f"Chunk {i+1} is not a text element, type = {type(chunk)}; value = {chunk}")
     return chunks
 
 """Chunk -> Seperates into text, tables, images"""
@@ -79,7 +84,7 @@ def summary_text(text: str, tables: List[str], images: List[str]) -> str:
             for i, table in enumerate(tables, start=1):
                 prompt += f"Table {i}:\n{table}\n\n"
         
-        prompt_text += """
+        prompt += """
         YOUR TASK:
         Generate a comprehensive, searchable description that covers:
 
@@ -93,7 +98,7 @@ def summary_text(text: str, tables: List[str], images: List[str]) -> str:
 
         SEARCHABLE DESCRIPTION:"""
             
-        message = [{"type": "text", "text": prompt_text}]
+        message = [{"type": "text", "text": prompt}]
 
         for img in images:
             message.append({"type": "image_url", "image_url": f"data:image/jpeg;base64,{img}"})
@@ -114,9 +119,9 @@ def process_chunks_to_docs(chunks):
 
     total_chunks = len(chunks)
 
-    for i, chunks in enumerate(chunks):
+    for i, chunk in enumerate(chunks):
         print(f"Processing chunk {i+1}/{total_chunks}")
-        content = seperate_chunk(i)
+        content = seperate_chunk(chunk)
 
         if content["tables"] or content["images"]:
             try:
@@ -134,7 +139,9 @@ def process_chunks_to_docs(chunks):
                 "Original_content": json.dumps(content)
             }
         )
+
         langchain_docs.append(doc)
+        print(doc)
     print(f"Processed {len(langchain_docs)} chunks into Langchain Documents.")
     return langchain_docs
 

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, Request
+from fastapi import FastAPI, UploadFile, Request, File, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -17,14 +17,14 @@ app.add_middleware(
 )
 
 @app.post("/ingest")
-async def ingest_document(file: UploadFile = File(...)):
+async def ingest_document(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     try:
         file_location = f"docs/{file.filename}"
         with open(file_location, "wb+") as file_object:
             file_object.write(file.file.read())
         
         # Call the ingestion pipeline
-        complete_ingestion_pipeline(file_location)
+        background_tasks.add_task(complete_ingestion_pipeline, file_location)        
         return JSONResponse(content={"message": f"File '{file.filename}' ingested successfully."})
     
     except Exception as e:
@@ -45,3 +45,9 @@ async def get_answer(request: Request):
 @app.get("/")
 async def root():
     return {"message": "RAG backend is running!"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="127.0.0.1", port=5000, reload=True)
+

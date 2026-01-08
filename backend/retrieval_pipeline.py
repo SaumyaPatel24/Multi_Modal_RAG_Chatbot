@@ -41,12 +41,22 @@ def complete_retrieval_pipeline(question, chat_history):
 
     # retrieve chunks from the vector database
     retriever = db.as_retriever(search_type="similarity", search_kwargs={"k":3})
-    relevant_docs = retriever.invoke(new_question)
-    
+    try:
+        relevant_docs = retriever.invoke(new_question)
+    except Exception as e:
+        print(f"Error retrieving documents: {e}")
+        return "An error occurred during document retrieval."
+    print(f"Retrieved {len(relevant_docs)} documents.\n")
+
+    for i, doc in enumerate(relevant_docs):
+        print(f"--- Document {i+1} ---")
+        print("Text (first 500 chars):", doc.page_content[:500])
+        print("Metadata:", doc.metadata)
+        print("\n")
     # create combined input for the model
     try:
         # invoking the model to get the answer for combined input
-        model = ChatOpenAI(model ="gpt-4o-mini" , openai_api_key=os.getenv("OPENAI_API_KEY"))
+        model = ChatOpenAI(model ="gpt-4o" , openai_api_key=os.getenv("OPENAI_API_KEY"))
 
         prompt_text  = f"""Based on the following documents, please answer the question: {new_question}
         Document:
@@ -55,7 +65,7 @@ def complete_retrieval_pipeline(question, chat_history):
         for i, doc in enumerate(relevant_docs):
             prompt_text += f"--- Document {i+1} ---\n"
 
-            if "original_content" in doc.metadata:
+            if "Original_content" in doc.metadata:
                 original_content = json.loads(doc.metadata["Original_content"])
                 raw_text = original_content.get("text", "")
                 if raw_text:
@@ -71,17 +81,18 @@ def complete_retrieval_pipeline(question, chat_history):
 
         prompt_text += """Please provide a clear, comprehensive answer using the text, tables, and images above. If the documents don't contain sufficient information to answer the question, say "I don't have enough information to answer that question based on the provided documents. ANSWER:"""
 
-        message = [{"text": "text", "text": prompt_text}]
+        message = [{"type": "text", "text": prompt_text}]
 
         for doc in relevant_docs:
-            if "original_content" in doc.metadata:
+            if "Original_content" in doc.metadata:
                 original_content = json.loads(doc.metadata["Original_content"])    
+                print(original_content)
                 images = original_content.get("images", [])
                 if images:
-                    for image_base64 in enumerate(images):
+                    for image_base64 in images:
                         message.append({"type": "image_url", "image_url": f"data:image/jpeg;base64,{image_base64}"})
 
-        message = [HumanMessage(content=message)]
+        message = HumanMessage(content=message)
         response = model.invoke([message])
 
            
